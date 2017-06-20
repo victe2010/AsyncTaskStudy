@@ -184,6 +184,108 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //获取网络图片
+    private class MyAsy extends AsyncTask<String, Integer, Bitmap> {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected Bitmap doInBackground(String... params) {
+            Bitmap bitmap = null;
+            try {
+                URL url = new URL(params[0]);
+                HttpURLConnection httpURLConnection =
+                        (HttpURLConnection) url.openConnection();
+                httpURLConnection.setRequestMethod("GET");
+                if (httpURLConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                    InputStream is = httpURLConnection.getInputStream();
+                    bitmap = BitmapFactory.decodeStream(is);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            return bitmap;
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            super.onProgressUpdate(values);
+
+        }
+
+        @Override
+        protected void onPostExecute(Bitmap bitmap) {
+            super.onPostExecute(bitmap);
+            if (bitmap != null)
+                iv.setImageBitmap(bitmap);
+        }
+    }
+
+    //下载
+    private class uplaodAsy extends AsyncTask<String, Integer, Void> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            pb.setVisibility(View.VISIBLE);//显示进度条
+        }
+
+        @Override
+        protected Void doInBackground(String... params) {
+            //执行下载
+            try {
+                URL url = new URL(params[0]);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setConnectTimeout(5000);
+                if (connection.getResponseCode() == 200){
+                    InputStream inputStream = connection.getInputStream();
+                    //获取下载文件的总长度
+                    int length = connection.getContentLength();
+                    //获取文件的输出对象
+                    File file = new File
+                            (hasSdCard(),params[0].substring(params[0].lastIndexOf("/")+1));
+                    if (file.exists()) file.delete();
+                    //获取文件的输出流
+                    FileOutputStream fos = new FileOutputStream(file);
+                    int len;
+                    byte[] bytes = new byte[1024];
+                    int sum = 0;//用于接收已下载的总长度
+                    //边读边写
+                    while((len = inputStream.read(bytes))!=-1){
+                        fos.write(bytes,0,len);
+                        sum += len;
+                        publishProgress((int)((sum*1.0/length)*100));
+
+                    }
+                    fos.close();
+                    inputStream.close();
+                    connection.disconnect();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            super.onProgressUpdate(values);
+            pb.setProgress(values[0]);//设置进度条
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            Toast.makeText(MainActivity.this, "下载完成", Toast.LENGTH_SHORT).show();
+            pb.setVisibility(View.GONE);
+        }
+    }
+
+
+
 
     //判断sd卡是否存在并放回sd卡的根目录
     private File hasSdCard(){
